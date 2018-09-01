@@ -3,13 +3,10 @@ package com.nodemules.api.wiki.api.controller;
 import com.nodemules.api.wiki.core.article.pojo.ArticleTrace;
 import com.nodemules.api.wiki.mediawiki.MediaWikiApiClient;
 import com.nodemules.api.wiki.mediawiki.model.Article;
-import com.nodemules.api.wiki.mediawiki.model.Link;
 import com.nodemules.api.wiki.mediawiki.model.Page;
 import com.nodemules.api.wiki.mediawiki.model.Parse;
 import com.nodemules.api.wiki.mediawiki.model.Redirect;
 import com.nodemules.api.wiki.mediawiki.model.Result;
-import com.nodemules.cache.core.Cache;
-import com.nodemules.cache.core.CachedRecord;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,10 +78,6 @@ public class ArticleController {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("section", "0");
     Parse parsed = MediaWikiApiClient.parse(last.getPageId(), params);
-    Article nextArticle = parsed.getText().getFirstArticle();
-    if (nextArticle == null) {
-      return list;
-    }
 
     if (!parsed.getRedirects().isEmpty()) {
       List<Page> redirectLinks = MediaWikiApiClient.links(parsed.getPageId());
@@ -105,6 +98,11 @@ public class ArticleController {
         last.setPageId(redirect.getPageId());
         last.setTitle(redirect.getTitle());
       }
+    }
+
+    Article nextArticle = parsed.getText().getFirstArticle();
+    if (nextArticle == null) {
+      return list;
     }
 
     Page next = getNextPage(last.getPageId(), nextArticle.getTitle());

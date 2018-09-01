@@ -68,7 +68,7 @@ public class MediaWikiApiClient {
 
     Parse parsed = apiResponse.getParse();
 
-    if (parsed.getWikiText().getValue().contains("#REDIRECT")) {
+    if (parsed.getWikiText().getValue().toUpperCase().contains("#REDIRECT")) {
       return parse(pageId, additionalParams, true);
     }
 
