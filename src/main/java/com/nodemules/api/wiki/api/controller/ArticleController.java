@@ -135,7 +135,7 @@ public class ArticleController {
   private Page getNextPage(int pageId, String title) {
     Page page = linkCache.getOrDefault(title, null);
     if (page != null) {
-      log.info("Retrieved page {} from cache", title);
+      log.info("Retrieved link to page {} from cache", title);
       return page;
     }
     List<Page> links = MediaWikiApiClient.links(pageId);
