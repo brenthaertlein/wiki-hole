@@ -54,6 +54,9 @@ public class ArticleController {
     articleTrace.setTitle(parsed.getTitle());
     articleTrace.setPageId(parsed.getPageId());
     Article firstLink = parsed.getText().getFirstArticle();
+    if (firstLink == null) {
+      return articleTrace;
+    }
     List<Page> links = MediaWikiApiClient.links(parsed.getPageId());
     firstLink.setPageId(
         links.stream().filter(p -> firstLink.getTitle().equals(p.getTitle())).findFirst()
