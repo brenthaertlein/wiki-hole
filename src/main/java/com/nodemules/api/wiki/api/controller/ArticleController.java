@@ -68,9 +68,10 @@ public class ArticleController {
     Article last = list.getLast();
 
     final Article fromCache = articleCache.getOrDefault(last.getPageId(), null);
-    if (fromCache != null && list.stream().noneMatch(a -> a.getPageId() == fromCache.getPageId())) {
-      log.info("Retrieved article {} from cache", fromCache.getTitle());
-      list.add(fromCache);
+    if (fromCache != null && fromCache.getNext() != null && list.stream()
+        .noneMatch(a -> a.getPageId() == fromCache.getNext().getPageId())) {
+      log.info("Retrieved article {} from cache", fromCache.getNext().getTitle());
+      list.add(fromCache.getNext());
       return getArticleChain(list);
     }
 
