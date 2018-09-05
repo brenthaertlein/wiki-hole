@@ -22,7 +22,7 @@ public class Text extends ValueHolder {
 
   private static final List<String> validLinkParents = Arrays.asList("p", "li");
   private static final List<String> blacklistedUrlPatterns = Arrays
-      .asList("Help:", "File:", "Wikipedia:");
+      .asList("Help:", "File:", "Wikipedia:", "Category:");
 
   private static final long serialVersionUID = 558999892219819016L;
   private static final String WIKIPEDIA_BASE_URL = "https://en.wikipedia.org/";
