@@ -1,24 +1,17 @@
-package com.nodemules.api.wiki.mediawiki.model;
+package com.nodemules.api.wiki.core;
 
+import com.nodemules.api.wiki.core.article.pojo.Article;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
 import org.springframework.web.util.UriComponentsBuilder;
 
-@Slf4j
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class Text extends ValueHolder {
+public final class ArticleParser {
 
   private static final List<String> validLinkParents = Arrays.asList("p", "li");
   private static final List<String> blacklistedUrlPatterns = Arrays
@@ -27,15 +20,19 @@ public class Text extends ValueHolder {
   private static final long serialVersionUID = 558999892219819016L;
   private static final String WIKIPEDIA_BASE_URL = "https://en.wikipedia.org/";
 
-  public Article getFirstArticle() {
-    Document doc = Jsoup.parse(this.value);
+  private ArticleParser() {
+    throw new AssertionError("No com.nodemules.api.wiki.ArticleParser for you!");
+  }
+
+  public static Article getFirstArticle(String html) {
+    Document doc = Jsoup.parse(html);
     Elements contentText = doc.select(".mw-parser-output");
     Elements noArticleText = doc.select(".noarticletext");
     if (contentText.isEmpty() && !noArticleText.isEmpty()) {
       return null;
     }
     Elements links = doc.select(".mw-parser-output > p a, .mw-parser-output > ul a");
-    Element link = links.stream().filter(this::isArticleLink).findFirst().orElse(null);
+    Element link = links.stream().filter(ArticleParser::isArticleLink).findFirst().orElse(null);
     if (link == null) {
       return null;
     }
@@ -47,7 +44,7 @@ public class Text extends ValueHolder {
     return article;
   }
 
-  private boolean isArticleLink(Element link) {
+  private static boolean isArticleLink(Element link) {
     String href = link.attr("href");
     if (href == null) {
       return false;
@@ -72,7 +69,7 @@ public class Text extends ValueHolder {
     return true;
   }
 
-  private boolean isLanguageLink(Element element) {
+  private static boolean isLanguageLink(Element element) {
 
     Element parent = element.parent();
     if (!validLinkParents.contains(parent.tag().getName())) {
@@ -105,5 +102,5 @@ public class Text extends ValueHolder {
 
     return false;
   }
-}
 
+}

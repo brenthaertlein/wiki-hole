@@ -42,6 +42,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.nodemules.mediawiki</groupId>
+      <artifactId>mediawiki-client</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>runtime</scope>

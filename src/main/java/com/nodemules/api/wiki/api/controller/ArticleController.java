@@ -1,12 +1,14 @@
 package com.nodemules.api.wiki.api.controller;
 
+import com.nodemules.api.wiki.core.ArticleParser;
+import com.nodemules.api.wiki.core.article.pojo.Article;
 import com.nodemules.api.wiki.core.article.pojo.ArticleTrace;
-import com.nodemules.api.wiki.mediawiki.MediaWikiApiClient;
-import com.nodemules.api.wiki.mediawiki.model.Article;
-import com.nodemules.api.wiki.mediawiki.model.Page;
-import com.nodemules.api.wiki.mediawiki.model.Parse;
-import com.nodemules.api.wiki.mediawiki.model.Redirect;
-import com.nodemules.api.wiki.mediawiki.model.Result;
+import com.nodemules.mediawiki.MediaWikiApiClient;
+import com.nodemules.mediawiki.model.Page;
+import com.nodemules.mediawiki.model.Parse;
+import com.nodemules.mediawiki.model.Redirect;
+import com.nodemules.mediawiki.model.Result;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,6 +20,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -40,6 +43,17 @@ public class ArticleController {
     return getArticleTrace(id);
   }
 
+  @GetMapping("/list")
+  public List<ArticleTrace> traceArticles(
+      @RequestParam(required = false, defaultValue = "10") int number) {
+    List<ArticleTrace> list = new ArrayList<>();
+    for (int i = 0; i < number; i++) {
+      Result randomPage = MediaWikiApiClient.random();
+      list.add(getArticleTrace(randomPage.getId()));
+    }
+    return list;
+  }
+
   private ArticleTrace getArticleTrace(int pageId) {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("section", "0");
@@ -50,7 +64,7 @@ public class ArticleController {
     }
     articleTrace.setTitle(parsed.getTitle());
     articleTrace.setPageId(parsed.getPageId());
-    Article firstLink = parsed.getText().getFirstArticle();
+    Article firstLink = ArticleParser.getFirstArticle(parsed.getText().getValue());
     if (firstLink == null) {
       return articleTrace;
     }
@@ -58,8 +72,8 @@ public class ArticleController {
     firstLink.setPageId(
         links.stream().filter(p -> firstLink.getTitle().equals(p.getTitle())).findFirst()
             .orElse(new Page()).getPageId());
-    articleTrace.setArticleChain(getArticleChain(new LinkedList<>(
-        Collections.singletonList(firstLink))));
+    articleTrace
+        .setArticleChain(getArticleChain(new LinkedList<>(Collections.singletonList(firstLink))));
     return articleTrace;
   }
 
@@ -67,12 +81,14 @@ public class ArticleController {
 
     Article last = list.getLast();
 
-    final Article fromCache = articleCache.getOrDefault(last.getPageId(), null);
-    if (fromCache != null && fromCache.getNext() != null && list.stream()
-        .noneMatch(a -> a.getPageId() == fromCache.getNext().getPageId())) {
-      log.info("Retrieved article {} from cache", fromCache.getNext().getTitle());
-      list.add(fromCache.getNext());
-      return getArticleChain(list);
+    if (last.getNext() != null) {
+      final Article fromCache = articleCache.getOrDefault(last.getNext().getPageId(), null);
+      if (fromCache != null && list.stream()
+          .noneMatch(a -> a.getPageId() == fromCache.getPageId())) {
+        log.info("Retrieved article {} from cache", fromCache.getTitle());
+        list.add(fromCache);
+        return getArticleChain(list);
+      }
     }
 
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -91,16 +107,16 @@ public class ArticleController {
         }
       }
       if (redirect != null) {
-        Page page = new Page();
-        page.setPageId(last.getPageId());
-        page.setTitle(last.getTitle());
-        last.setRedirectedFrom(page);
+        Article article = new Article();
+        article.setPageId(last.getPageId());
+        article.setTitle(last.getTitle());
+        last.setRedirectedFrom(article);
         last.setPageId(redirect.getPageId());
         last.setTitle(redirect.getTitle());
       }
     }
 
-    Article nextArticle = parsed.getText().getFirstArticle();
+    Article nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
     if (nextArticle == null) {
       return list;
     }
