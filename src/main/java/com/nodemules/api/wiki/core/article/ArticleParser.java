@@ -1,4 +1,4 @@
-package com.nodemules.api.wiki.core;
+package com.nodemules.api.wiki.core.article;
 
 import com.nodemules.api.wiki.core.article.pojo.Article;
 import java.net.URI;

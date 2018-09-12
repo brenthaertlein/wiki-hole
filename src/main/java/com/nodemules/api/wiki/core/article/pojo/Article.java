@@ -1,13 +1,14 @@
 package com.nodemules.api.wiki.core.article.pojo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.net.URI;
+import java.io.Serializable;
 import lombok.Data;
 
 @Data
-public class Article {
+public class Article implements Serializable {
 
-  private URI href;
+  private static final long serialVersionUID = -4670573566323394797L;
+
+  private String href;
   private Article next;
   private String title;
   private int pageId;

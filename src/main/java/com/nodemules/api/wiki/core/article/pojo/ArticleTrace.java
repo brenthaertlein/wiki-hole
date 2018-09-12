@@ -3,7 +3,8 @@ package com.nodemules.api.wiki.core.article.pojo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -17,23 +18,11 @@ public class ArticleTrace implements Serializable {
   private int namespaceId;
 
   private String title;
+  private Article first;
+  private Article last;
+  private Article endOfChain;
 
-  private LinkedList<Article> articleChain = new LinkedList<>();
-
-  public Article getFirst() {
-    return articleChain.getFirst();
-  }
-
-  public Article getLast() {
-    return articleChain.getLast();
-  }
-
-  public Article getEndOfChain() {
-    if (this.getLast() == null) {
-      return null;
-    }
-    return this.getLast().getNext();
-  }
+  private List<Article> articleChain = new ArrayList<>();
 
   public int getChainDepth() {
     return articleChain.size();
