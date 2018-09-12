@@ -2,7 +2,6 @@ package com.nodemules.api.wiki.core.article.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.nodemules.api.wiki.core.article.pojo.Article;
 import java.util.LinkedList;
 import lombok.Data;
 
@@ -16,17 +15,17 @@ public class ArticleTraceModel {
 
   private String title;
 
-  private LinkedList<Article> articleChain = new LinkedList<>();
+  private LinkedList<ArticleModel> articleChain = new LinkedList<>();
 
-  public Article getFirst() {
+  public ArticleModel getFirst() {
     return articleChain.getFirst();
   }
 
-  public Article getLast() {
+  public ArticleModel getLast() {
     return articleChain.getLast();
   }
 
-  public Article getEndOfChain() {
+  public ArticleModel getEndOfChain() {
     if (this.getLast() == null) {
       return null;
     }

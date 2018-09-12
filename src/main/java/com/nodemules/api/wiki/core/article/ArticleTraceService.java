@@ -1,5 +1,6 @@
 package com.nodemules.api.wiki.core.article;
 
+import com.nodemules.api.wiki.core.article.model.ArticleModel;
 import com.nodemules.api.wiki.core.article.model.ArticleTraceModel;
 import com.nodemules.api.wiki.core.article.pojo.Article;
 import com.nodemules.mediawiki.MediaWikiApiClient;
@@ -21,7 +22,7 @@ import org.springframework.util.MultiValueMap;
 public class ArticleTraceService implements ArticleTraceOperations {
 
   private final Map<String, Page> linkCache = new ConcurrentHashMap<>();
-  private final Map<Integer, Article> articleCache = new ConcurrentHashMap<>();
+  private final Map<Integer, ArticleModel> articleCache = new ConcurrentHashMap<>();
 
   @Override
   public ArticleTraceModel getArticleTrace(int pageId) {
@@ -34,7 +35,7 @@ public class ArticleTraceService implements ArticleTraceOperations {
     }
     model.setTitle(parsed.getTitle());
     model.setPageId(parsed.getPageId());
-    Article firstLink = ArticleParser.getFirstArticle(parsed.getText().getValue());
+    ArticleModel firstLink = ArticleParser.getFirstArticle(parsed.getText().getValue());
     if (firstLink == null) {
       return model;
     }
@@ -48,12 +49,12 @@ public class ArticleTraceService implements ArticleTraceOperations {
     return model;
   }
 
-  private LinkedList<Article> getArticleChain(LinkedList<Article> list) {
+  private LinkedList<ArticleModel> getArticleChain(LinkedList<ArticleModel> list) {
 
-    Article last = list.getLast();
+    ArticleModel last = list.getLast();
 
     if (last.getNext() != null) {
-      final Article fromCache = articleCache.getOrDefault(last.getNext().getPageId(), null);
+      final ArticleModel fromCache = articleCache.getOrDefault(last.getNext().getPageId(), null);
       if (fromCache != null && list.stream()
           .noneMatch(a -> a.getPageId() == fromCache.getPageId())) {
         log.info("Retrieved article {} from cache", fromCache.getTitle());
@@ -78,7 +79,7 @@ public class ArticleTraceService implements ArticleTraceOperations {
         }
       }
       if (redirect != null) {
-        Article article = new Article();
+        ArticleModel article = new ArticleModel();
         article.setPageId(last.getPageId());
         article.setTitle(last.getTitle());
         last.setRedirectedFrom(article);
@@ -87,7 +88,7 @@ public class ArticleTraceService implements ArticleTraceOperations {
       }
     }
 
-    Article nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
+    ArticleModel nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
     if (nextArticle == null) {
       return list;
     }
@@ -99,12 +100,12 @@ public class ArticleTraceService implements ArticleTraceOperations {
       log.debug("Unable to find next link to {} from {}", nextArticle.getTitle(), last.getTitle());
       return list;
     }
-    Article article = new Article();
+    ArticleModel article = new ArticleModel();
     article.setPageId(next.getPageId());
     article.setTitle(next.getTitle());
     article.setHref(nextArticle.getHref());
 
-    Article next2 = new Article();
+    ArticleModel next2 = new ArticleModel();
     next2.setPageId(next.getPageId());
     next2.setTitle(next.getTitle());
     next2.setHref(nextArticle.getHref());

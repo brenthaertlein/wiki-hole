@@ -1,6 +1,6 @@
 package com.nodemules.api.wiki.core.article;
 
-import com.nodemules.api.wiki.core.article.pojo.Article;
+import com.nodemules.api.wiki.core.article.model.ArticleModel;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +24,7 @@ public final class ArticleParser {
     throw new AssertionError("No com.nodemules.api.wiki.ArticleParser for you!");
   }
 
-  public static Article getFirstArticle(String html) {
+  public static ArticleModel getFirstArticle(String html) {
     Document doc = Jsoup.parse(html);
     Elements contentText = doc.select(".mw-parser-output");
     Elements noArticleText = doc.select(".noarticletext");
@@ -36,10 +36,10 @@ public final class ArticleParser {
     if (link == null) {
       return null;
     }
-    Article article = new Article();
+    ArticleModel article = new ArticleModel();
+    article.setTitle(link.attr("title"));
     URI href = UriComponentsBuilder.fromUriString(WIKIPEDIA_BASE_URL).path(link.attr("href"))
         .build().toUri();
-    article.setTitle(link.attr("title"));
     article.setHref(href);
     return article;
   }
