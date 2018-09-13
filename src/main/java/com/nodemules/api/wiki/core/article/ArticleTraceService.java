@@ -43,20 +43,15 @@ public class ArticleTraceService implements ArticleTraceOperations {
     ArticleModel last = list.getLast();
 
     if (last.getNext() != null) {
-      ArticleModel fromCache = getArticle(last.getNext().getPageId());
-      if (fromCache != null) {
-        log.info("Retrieved article {} from cache via last.getNext() ", fromCache.getTitle());
+      ArticleModel next = getArticle(last.getNext().getPageId());
+      if (next != null) {
         if (list.stream()
-            .anyMatch(a -> a.getPageId() == fromCache.getPageId())) {
+            .anyMatch(a -> a.getPageId() == next.getPageId())) {
           return list;
         }
 
-        ArticleModel nextFromCache = new ArticleModel();
-        nextFromCache.setPageId(fromCache.getPageId());
-        nextFromCache.setTitle(fromCache.getTitle());
-        nextFromCache.setHref(fromCache.getHref());
-        last.setNext(nextFromCache);
-        list.add(fromCache);
+        last.setNext(next.clone());
+        list.add(next);
         return getArticleChain(list);
       }
     }
@@ -77,10 +72,7 @@ public class ArticleTraceService implements ArticleTraceOperations {
         }
       }
       if (redirect != null) {
-        ArticleModel article = new ArticleModel();
-        article.setPageId(last.getPageId());
-        article.setTitle(last.getTitle());
-        last.setRedirectedFrom(article);
+        last.setRedirectedFrom(last.clone());
         last.setPageId(redirect.getPageId());
         last.setTitle(redirect.getTitle());
       }
@@ -100,17 +92,12 @@ public class ArticleTraceService implements ArticleTraceOperations {
 
     final ArticleModel fromCache = getArticle(next.getPageId());
     if (fromCache != null) {
-      log.info("Retrieved article {} from cache via nextArticle.getPageId()", fromCache.getTitle());
       if (list.stream()
           .anyMatch(a -> a.getPageId() == fromCache.getPageId())) {
         return list;
       }
 
-      ArticleModel nextFromCache = new ArticleModel();
-      nextFromCache.setPageId(next.getPageId());
-      nextFromCache.setTitle(next.getTitle());
-      nextFromCache.setHref(nextArticle.getHref());
-      last.setNext(nextFromCache);
+      last.setNext(next.clone());
       list.add(fromCache);
       return getArticleChain(list);
     }
@@ -119,14 +106,9 @@ public class ArticleTraceService implements ArticleTraceOperations {
     article.setPageId(next.getPageId());
     article.setTitle(next.getTitle());
     article.setHref(nextArticle.getHref());
+    last.setNext(article.clone());
 
-    ArticleModel next2 = new ArticleModel();
-    next2.setPageId(next.getPageId());
-    next2.setTitle(next.getTitle());
-    next2.setHref(nextArticle.getHref());
-    last.setNext(next2);
-
-    articleCache.put(last.getPageId(), last);
+    articleCache.putIfAbsent(last.getPageId(), last.clone());
 
     int nextPageId = article.getPageId();
     if (list.stream().noneMatch(a -> a.getPageId() == nextPageId)) {
@@ -176,23 +158,20 @@ public class ArticleTraceService implements ArticleTraceOperations {
       return null;
     }
 
-    ArticleModel nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
-    if (nextArticle == null) {
-      return null;
-    }
-
-    ArticleModel next = getNextPage(pageId, nextArticle.getTitle());
-    if (next == null) {
-      // TODO - fetch more links if links result is pageable
-      return null;
-    }
-
     ArticleModel article = new ArticleModel();
 
     article.setPageId(parsed.getPageId());
     article.setTitle(parsed.getTitle());
-    article.setNext(next);
-    articleCache.put(article.getPageId(), article);
+
+    ArticleModel nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
+    if (nextArticle != null) {
+      ArticleModel next = getNextPage(pageId, nextArticle.getTitle());
+      if (next != null) {
+        next.setHref(nextArticle.getHref());
+        article.setNext(next.clone());
+      }
+    }
+    articleCache.putIfAbsent(article.getPageId(), article.clone());
     return article;
   }
 }
