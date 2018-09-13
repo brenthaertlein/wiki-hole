@@ -1,18 +1,13 @@
 package com.nodemules.api.wiki.core.article.mapper;
 
+import com.nodemules.api.wiki.core.URIToStringMapper;
 import com.nodemules.api.wiki.core.article.model.ArticleModel;
 import com.nodemules.api.wiki.core.article.pojo.Article;
 import fr.xebia.extras.selma.IoC;
 import fr.xebia.extras.selma.Mapper;
-import fr.xebia.extras.selma.Maps;
 
-@Mapper(withIoC = IoC.SPRING)
+@Mapper(withIoC = IoC.SPRING, withCustom = {URIToStringMapper.class})
 public interface ArticleMapper {
 
-  @Maps(
-      withIgnoreFields = {
-          "href"
-      }
-  )
   Article toPojo(ArticleModel model);
 }
