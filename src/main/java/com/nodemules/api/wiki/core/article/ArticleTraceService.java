@@ -2,7 +2,6 @@ package com.nodemules.api.wiki.core.article;
 
 import com.nodemules.api.wiki.core.article.model.ArticleModel;
 import com.nodemules.api.wiki.core.article.model.ArticleTraceModel;
-import com.nodemules.api.wiki.core.article.pojo.Article;
 import com.nodemules.mediawiki.MediaWikiApiClient;
 import com.nodemules.mediawiki.model.Page;
 import com.nodemules.mediawiki.model.Parse;
@@ -26,25 +25,15 @@ public class ArticleTraceService implements ArticleTraceOperations {
 
   @Override
   public ArticleTraceModel getArticleTrace(int pageId) {
-    MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-    params.add("section", "0");
-    ArticleTraceModel model = new ArticleTraceModel();
-    Parse parsed = MediaWikiApiClient.parse(pageId, params);
-    if (parsed == null) {
+    ArticleModel article = getArticle(pageId);
+    if (article == null) {
       return null;
     }
-    model.setTitle(parsed.getTitle());
-    model.setPageId(parsed.getPageId());
-    ArticleModel firstLink = ArticleParser.getFirstArticle(parsed.getText().getValue());
-    if (firstLink == null) {
-      return model;
-    }
-    List<Page> links = MediaWikiApiClient.links(parsed.getPageId());
-    firstLink.setPageId(
-        links.stream().filter(p -> firstLink.getTitle().equals(p.getTitle())).findFirst()
-            .orElse(new Page()).getPageId());
-    model
-        .setArticleChain(getArticleChain(new LinkedList<>(Collections.singletonList(firstLink))));
+    ArticleTraceModel model = new ArticleTraceModel();
+    model.setTitle(article.getTitle());
+    model.setPageId(article.getPageId());
+    model.setArticleChain(
+        getArticleChain(new LinkedList<>(Collections.singletonList(article.getNext()))));
 
     return model;
   }
@@ -54,10 +43,19 @@ public class ArticleTraceService implements ArticleTraceOperations {
     ArticleModel last = list.getLast();
 
     if (last.getNext() != null) {
-      final ArticleModel fromCache = articleCache.getOrDefault(last.getNext().getPageId(), null);
-      if (fromCache != null && list.stream()
-          .noneMatch(a -> a.getPageId() == fromCache.getPageId())) {
-        log.info("Retrieved article {} from cache", fromCache.getTitle());
+      ArticleModel fromCache = getArticle(last.getNext().getPageId());
+      if (fromCache != null) {
+        log.info("Retrieved article {} from cache via last.getNext() ", fromCache.getTitle());
+        if (list.stream()
+            .anyMatch(a -> a.getPageId() == fromCache.getPageId())) {
+          return list;
+        }
+
+        ArticleModel nextFromCache = new ArticleModel();
+        nextFromCache.setPageId(fromCache.getPageId());
+        nextFromCache.setTitle(fromCache.getTitle());
+        nextFromCache.setHref(fromCache.getHref());
+        last.setNext(nextFromCache);
         list.add(fromCache);
         return getArticleChain(list);
       }
@@ -93,13 +91,30 @@ public class ArticleTraceService implements ArticleTraceOperations {
       return list;
     }
 
-    Page next = getNextPage(last.getPageId(), nextArticle.getTitle());
+    ArticleModel next = getNextPage(last.getPageId(), nextArticle.getTitle());
     if (next == null) {
-
       // TODO - fetch more links if links result is pageable
       log.debug("Unable to find next link to {} from {}", nextArticle.getTitle(), last.getTitle());
       return list;
     }
+
+    final ArticleModel fromCache = getArticle(next.getPageId());
+    if (fromCache != null) {
+      log.info("Retrieved article {} from cache via nextArticle.getPageId()", fromCache.getTitle());
+      if (list.stream()
+          .anyMatch(a -> a.getPageId() == fromCache.getPageId())) {
+        return list;
+      }
+
+      ArticleModel nextFromCache = new ArticleModel();
+      nextFromCache.setPageId(next.getPageId());
+      nextFromCache.setTitle(next.getTitle());
+      nextFromCache.setHref(nextArticle.getHref());
+      last.setNext(nextFromCache);
+      list.add(fromCache);
+      return getArticleChain(list);
+    }
+
     ArticleModel article = new ArticleModel();
     article.setPageId(next.getPageId());
     article.setTitle(next.getTitle());
@@ -121,36 +136,63 @@ public class ArticleTraceService implements ArticleTraceOperations {
     return list;
   }
 
-  private Page getNextPage(int pageId, String title) {
+  private ArticleModel getNextPage(int pageId, String title) {
     Page page = linkCache.getOrDefault(title, null);
     if (page != null) {
       log.info("Retrieved link to page {} from cache", title);
-      return page;
+      ArticleModel a = new ArticleModel();
+      a.setPageId(page.getPageId());
+      a.setNamespaceId(page.getNamespace());
+      a.setTitle(page.getTitle());
+      return a;
     }
     List<Page> links = MediaWikiApiClient.links(pageId);
 
     for (Page p : links) {
       linkCache.put(p.getTitle(), p);
       if (p.getTitle().equals(title)) {
-        return p;
+        ArticleModel a = new ArticleModel();
+        a.setPageId(p.getPageId());
+        a.setNamespaceId(p.getNamespace());
+        a.setTitle(p.getTitle());
+        return a;
       }
 
     }
     return null;
   }
 
-  private Article getArticle(int pageId) {
+  private ArticleModel getArticle(int pageId) {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("section", "0");
+
+    final ArticleModel fromCache = articleCache.getOrDefault(pageId, null);
+    if (fromCache != null) {
+      log.info("Retrieved article {} from cache", fromCache.getTitle());
+      return fromCache;
+    }
     Parse parsed = MediaWikiApiClient.parse(pageId, params);
     if (parsed == null) {
       return null;
     }
 
-    Article article = new Article();
+    ArticleModel nextArticle = ArticleParser.getFirstArticle(parsed.getText().getValue());
+    if (nextArticle == null) {
+      return null;
+    }
+
+    ArticleModel next = getNextPage(pageId, nextArticle.getTitle());
+    if (next == null) {
+      // TODO - fetch more links if links result is pageable
+      return null;
+    }
+
+    ArticleModel article = new ArticleModel();
 
     article.setPageId(parsed.getPageId());
     article.setTitle(parsed.getTitle());
+    article.setNext(next);
+    articleCache.put(article.getPageId(), article);
     return article;
   }
 }
