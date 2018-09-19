@@ -1,9 +1,13 @@
 package com.nodemules.api.wiki.api.controller;
 
+import com.nodemules.api.wiki.core.article.ArticleOperations;
 import com.nodemules.api.wiki.core.article.ArticleTraceOperations;
+import com.nodemules.api.wiki.core.article.mapper.ArticleMapper;
 import com.nodemules.api.wiki.core.article.mapper.ArticleTraceMapper;
 import com.nodemules.api.wiki.core.article.model.ArticleTraceModel;
+import com.nodemules.api.wiki.core.article.pojo.ArticleEntityPojo;
 import com.nodemules.api.wiki.core.article.pojo.ArticleTrace;
+import com.nodemules.api.wiki.persistence.domain.ArticleEntity;
 import com.nodemules.mediawiki.MediaWikiApiClient;
 import com.nodemules.mediawiki.model.Result;
 import java.util.ArrayList;
@@ -23,22 +27,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ArticleController {
 
+  private final ArticleMapper articleMapper;
   private final ArticleTraceMapper articleTraceMapper;
   private final ArticleTraceOperations articleTraceService;
+  private final ArticleOperations articleService;
 
-  @GetMapping("")
+  @GetMapping("/{id}")
+  public ArticleEntityPojo getArticle(@PathVariable(name="id") Long articleId) {
+    return articleMapper.toPojo(articleService.get(articleId));
+  }
+
+  @GetMapping("/trace")
   public ArticleTrace traceArticle() {
     Result randomPage = MediaWikiApiClient.random();
 
     return articleTraceMapper.toPojo(articleTraceService.getArticleTrace(randomPage.getId()));
   }
 
-  @GetMapping("/{id}")
+  @GetMapping("/trace/{id}")
   public ArticleTrace traceArticle(@PathVariable int id) {
     return articleTraceMapper.toPojo(articleTraceService.getArticleTrace(id));
   }
 
-  @GetMapping("/list")
+  @GetMapping("/trace/list")
   public List<ArticleTrace> traceArticles(
       @RequestParam(required = false, defaultValue = "10") int number) {
     List<ArticleTraceModel> list = new ArrayList<>();
