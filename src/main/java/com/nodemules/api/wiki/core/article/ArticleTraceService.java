@@ -97,6 +97,7 @@ public class ArticleTraceService implements ArticleTraceOperations {
         return list;
       }
 
+      next.setHref(nextArticle.getHref());
       last.setNext(next.clone());
       list.add(fromCache);
       return getArticleChain(list);
