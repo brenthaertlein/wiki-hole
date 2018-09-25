@@ -14,4 +14,10 @@ public class ArticleService implements ArticleOperations {
   public ArticleEntity get(Long articleId) {
     return articleRepository.getOne(articleId);
   }
+
+  @Override
+  public ArticleEntity getByName(String articleName) {
+    ArticleEntity byArticleName = articleRepository.findByArticleName(articleName);
+    return byArticleName;
+  }
 }

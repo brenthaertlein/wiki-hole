@@ -15,4 +15,6 @@ public class ArticleEntity {
   private Long articleId;
   private String articleName;
   private Integer namespaceId;
+  @Column(name="article_text", columnDefinition = "TEXT")
+  private String articleText;
 }

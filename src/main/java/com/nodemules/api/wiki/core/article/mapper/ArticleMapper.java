@@ -13,6 +13,7 @@ import fr.xebia.extras.selma.Maps;
 public interface ArticleMapper {
 
   Article toPojo(ArticleModel model);
+
   @Maps(withIgnoreFields = {"namespaceId"})
   ArticleEntityPojo toPojo(ArticleEntity entity);
 }

@@ -8,4 +8,6 @@ public class ArticleEntityPojo implements Serializable {
 
   private Long articleId;
   private String articleName;
+  private String articleText;
+
 }

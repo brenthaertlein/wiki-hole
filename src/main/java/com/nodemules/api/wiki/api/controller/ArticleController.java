@@ -33,8 +33,14 @@ public class ArticleController {
   private final ArticleOperations articleService;
 
   @GetMapping("/{id}")
-  public ArticleEntityPojo getArticle(@PathVariable(name="id") Long articleId) {
-    return articleMapper.toPojo(articleService.get(articleId));
+  public ArticleEntityPojo getArticle(@PathVariable Long id) {
+    return articleMapper.toPojo(articleService.get(id));
+  }
+
+  @GetMapping("/query")
+  public ArticleEntityPojo getArticleByName(@RequestParam(name="name") String articleName) {
+    ArticleEntity entity = articleService.getByName(articleName);
+    return articleMapper.toPojo(entity);
   }
 
   @GetMapping("/trace")
@@ -59,4 +65,5 @@ public class ArticleController {
     }
     return articleTraceMapper.toPojos(list);
   }
+
 }
